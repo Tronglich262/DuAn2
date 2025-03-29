@@ -7,7 +7,8 @@ public class Enemy : MonoBehaviour
     public static event System.Action<int> EnemyDied;
     public int enemyID;
     private Animator animator;
-    private bool isDead = false; 
+    private bool isDead = false;
+    [SerializeField] public GameObject itemDropPrefab;
 
     public GameObject floatingTextPrefab; // Prefab của "+5"
     private ScoreManager scoreManager;
@@ -44,8 +45,14 @@ public class Enemy : MonoBehaviour
    
     public void Die()
     {
-        Destroy(gameObject); // Xoá hoàn toàn quái
+        if (itemDropPrefab != null) // Kiểm tra nếu có vật phẩm rơi
+        {
+            Instantiate(itemDropPrefab, transform.position, Quaternion.identity); // Sinh vật phẩm tại vị trí của quái
+        }
+    
+        Destroy(gameObject); // Xóa quái
         EnemyDied?.Invoke(enemyID);
     }
+
     
 }

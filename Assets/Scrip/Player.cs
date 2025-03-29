@@ -48,12 +48,12 @@ public class Player : MonoBehaviour
 
     public void Jump()
     {
-       // if (isGrounded) // Chỉ nhảy nếu chạm đất
+       // if (Input.GetKeyDown(KeyCode.Space)) // Chỉ nhảy nếu chạm đất
         //{
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             animator.SetBool("Jump", true);
             Invoke(nameof(StopJump), 0.5f); // Dừng animation sau 0.5 giây
-        //}
+       // }
     }
 
     void StopJump()
@@ -99,6 +99,7 @@ public class Player : MonoBehaviour
         }
     }
 
+
     void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Ground"))
@@ -124,3 +125,4 @@ public class Player : MonoBehaviour
         }
     }
 }
+    

@@ -51,6 +51,11 @@ public class PlayerHealth : MonoBehaviour
             TakeDamage(20);
             Destroy(collision.gameObject);
         }
+        if (collision.gameObject.CompareTag("Dinh"))
+        {
+            StartCoroutine(Hit());
+            TakeDamage(100);
+        }
     }
 
     IEnumerator Hit()
@@ -140,6 +145,11 @@ public class PlayerHealth : MonoBehaviour
             player.TriggerBuffAnimation();
         }
     }
+    public bool IsHealthFull()
+    {
+        return currentHealth >= maxHealth;
+    }
+
 
     IEnumerator ResetGame()
     {

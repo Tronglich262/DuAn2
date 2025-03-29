@@ -12,8 +12,9 @@ namespace Inventory.Model
         [SerializeField] private List<InventoryItem> inventoryItems;
         [field: SerializeField] public int Size { get; private set; } = 10;
         public event Action<Dictionary<int, InventoryItem>> OnInventoryUpdated;
+        public List<InventoryItem> Items = new List<InventoryItem>();
 
-
+        
         public void Initialize()
         {
             inventoryItems = new List<InventoryItem>();
@@ -23,21 +24,21 @@ namespace Inventory.Model
             }
         }
 
-        public int AddItem(ItemSO item, int quantity)
+        public int AddItem(ItemSO item, int quantity,List<ItemParameter> itemState = null)
         {
-            if (!item.IsStackable)
+            if (!item.IsStackable == false)
             {
-                while (quantity > 0 && !IsInventoryFull())  // Sửa điều kiện vòng lặp
+                for (int i = 0; i < inventoryItems.Count; i++)
                 {
-                    quantity -= AddNonStackableItem(item, 1);
+                    while (quantity > 0 && IsInventoryFull() == false)// Sửa điều kiện vòng lặp
+                    {
+                        quantity -= AddItemToFirstFreeSlot(item, 1);
+                    }
+                    InformAboutChange();
+                    return quantity;
                 }
             }
-            else
-            {
-                quantity = AddStackableItem(item, quantity);
-            }
-
-// Chỉ gọi khi có thay đổi thực sự
+            quantity = AddStackableItem(item,quantity);
             InformAboutChange();
             return quantity;
         }
@@ -100,12 +101,13 @@ namespace Inventory.Model
             return quantity;
         }
 
-        private int AddItemToFirstFreeSlot(ItemSO item, int quantity)
+        private int AddItemToFirstFreeSlot(ItemSO item, int quantity, List<ItemParameter> itemState = null)
         {
             InventoryItem newItem = new InventoryItem
             {
                 item = item,
-                quantity = quantity
+                quantity = quantity,
+                itemState = new List<ItemParameter>(itemState == null ? item.DefaultParametersList : itemState)
             };
             for (int i = 0; i < inventoryItems.Count; i++)
             {
@@ -153,6 +155,36 @@ namespace Inventory.Model
         {
             OnInventoryUpdated?.Invoke(GetCurrentInventoryState());
         }
+
+        public void RemoveItem(int itemIndex, int amount)
+        {
+            if (inventoryItems.Count > itemIndex)
+            {
+                if (inventoryItems[itemIndex].IsEmpty)
+                    return;
+                int reminder = inventoryItems[itemIndex].quantity - amount;
+                if(reminder <= 0)
+                    inventoryItems[itemIndex] = InventoryItem.GetEmptyItem();
+                else
+                    inventoryItems[itemIndex] = inventoryItems[itemIndex].changeQuantity(reminder);
+                InformAboutChange();
+            }
+        }
+        //them 
+        public void SaveInventory()
+        {
+            string json = JsonUtility.ToJson(this);
+            PlayerPrefs.SetString("SavedInventory", json);
+            PlayerPrefs.Save();
+        }
+
+        public void LoadInventory()
+        {
+            if (PlayerPrefs.HasKey("SavedInventory"))
+            {
+                JsonUtility.FromJsonOverwrite(PlayerPrefs.GetString("SavedInventory"), this);
+            }
+        }
     }
 
     [Serializable]
@@ -160,6 +192,7 @@ namespace Inventory.Model
     {
         public int quantity;
         public ItemSO item;
+        public List<ItemParameter> itemState;
         public bool IsEmpty => item == null;
 
         public InventoryItem changeQuantity(int newQuantity)
@@ -168,6 +201,7 @@ namespace Inventory.Model
             {
                 item = this.item,
                 quantity = newQuantity,
+                itemState = new List<ItemParameter>(this.itemState)
             };
         }
 
@@ -175,6 +209,8 @@ namespace Inventory.Model
         {
             item = null,
             quantity = 0,
+            itemState = new List<ItemParameter>()
         };
+        
     }
 }

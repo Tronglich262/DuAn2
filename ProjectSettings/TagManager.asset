@@ -17,6 +17,7 @@ TagManager:
   - IgnoreTheme
   - Button
   - Item
+  - Dinh
   layers:
   - Default
   - TransparentFX

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Linq;
+using Inventory.Model;
 using UnityEditor;
 
 namespace Inventory.UI
@@ -17,6 +18,7 @@ namespace Inventory.UI
         [SerializeField] private UIInventoryDescription itemdescription;
         [SerializeField] private MouseFollower mouseFollower;
         List<UiinventoryItem> ListOfUiItem = new List<UiinventoryItem>();
+        [SerializeField] private InventorySO inventoryData;
         public int curentlyDraggendItemIndex = -1;
 
         public event Action<int> OnDescriptionRequaested,
@@ -24,6 +26,7 @@ namespace Inventory.UI
             OnstartDragging;
 
         public event Action<int, int> OnSwapItems;
+        [SerializeField] private ItemActionPanel actionPanel;
 
         private void Awake()
         {
@@ -46,6 +49,7 @@ namespace Inventory.UI
                 uiItem.OnRightMouseBtnClick += HandleShowItemActions;
             }
         }
+        
 
         public void UpdateDescription(int itemIndex, Sprite itemItemImage, string itemName, string itemDescription)
         {
@@ -64,7 +68,12 @@ namespace Inventory.UI
 
         private void HandleShowItemActions(UiinventoryItem inventoryItemUI)
         {
-
+            int index = ListOfUiItem.IndexOf(inventoryItemUI);
+            if (index == -1)
+            {
+                return;
+            } 
+            OnItemActionRequested?.Invoke(index);
         }
 
         private void HandleEndDrag(UiinventoryItem inventoryItemUI)
@@ -127,12 +136,24 @@ namespace Inventory.UI
             DeselectAllItems();
         }
 
+        public void AddAction(string actionName, Action performAction)
+        {
+            actionPanel.AddButon(actionName, performAction);
+        }
+
+        public void ShowItemActions(int itemIndex)
+        {
+            actionPanel.Toggle(true);
+            actionPanel.transform.position = ListOfUiItem[itemIndex].transform.position;
+        }
+
         private void DeselectAllItems()
         {
             foreach (UiinventoryItem item in ListOfUiItem)
             {
                 item.Deselect();
             }
+            actionPanel.Toggle(false);
         }
 
         public void hide()
@@ -140,10 +161,19 @@ namespace Inventory.UI
             gameObject.SetActive(false);
             ResetDraggtedItem();
         }
-
+//theem
         void Start()
         {
-
+            inventoryData.LoadInventory();  // 🔹 Load dữ liệu đã lưu
+            InitializeInventoryUI(inventoryData.Items.Count); 
+            UpdateAllItems();
+        }
+        public void UpdateAllItems()
+        {
+            for (int i = 0; i < inventoryData.Items.Count; i++)
+            {
+                //UpdateData(i, inventoryData.Items[i].ItemImage, inventoryData.Items[i].quantity);
+            }
         }
 
         // Update is called once per frame

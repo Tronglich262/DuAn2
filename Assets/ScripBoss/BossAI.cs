@@ -1,112 +1,106 @@
 using UnityEngine;
-using System.Collections;
 
-public class BossAL : MonoBehaviour
+public class BossAl : MonoBehaviour
 {
-    public Transform pointA; // Điểm A
-    public Transform pointB; // Điểm B
-    public float moveSpeed = 5f; // Tốc độ di chuyển
-    public float jumpForce = 10f; // Lực nhảy
-    public float attackRange = 5f; // Phạm vi tấn công
-    public LayerMask playerLayer; // Layer của người chơi
+    public Transform pointA;
+    public Transform pointB;
+    public float speed = 2f;
+    public Animator animator;
 
-    private Animator animator;
-    private Rigidbody rb;
-    private Transform targetPoint; // Điểm đích hiện tại
-    private bool isMoving = true;
+    private enum State { MovingToA, MovingToB, Attacking }
+    private State currentState;
+    private Vector3 target;
     private bool isAttacking = false;
-    private bool isJumping = false; // Thêm biến kiểm tra nhảy
 
     void Start()
     {
-        animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
-        targetPoint = pointB; // Bắt đầu di chuyển tới điểm B
-        StartCoroutine(ChangeMovement()); // Bắt đầu coroutine thay đổi di chuyển
+        if (animator == null)
+            animator = GetComponent<Animator>();
+
+        currentState = State.MovingToB;
+        target = pointB.position;
+        Flip(target);
+
+        if (animator != null)
+            animator.SetBool("Jump", true);
     }
 
     void Update()
     {
-        if (isMoving)
+        Move();
+    }
+
+    void Move()
+    {
+        if (isAttacking) return; // Dừng di chuyển nếu đang tấn công
+
+        transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+
+        if (Vector3.Distance(transform.position, target) < 0.05f)
         {
-            MoveToTarget();
+            SwitchState();
+        }
+    }
+
+    void SwitchState()
+    {
+        if (currentState == State.MovingToA)
+        {
+            currentState = State.MovingToB;
+            target = pointB.position;
+        }
+        else
+        {
+            currentState = State.MovingToA;
+            target = pointA.position;
         }
 
-        CheckForPlayer();
+        Flip(target);
+
+        if (animator != null)
+            animator.SetBool("Jump", true);
     }
 
-    void MoveToTarget()
+    void Flip(Vector3 targetPosition)
     {
-        Vector3 direction = (targetPoint.position - transform.position).normalized;
-        transform.Translate(direction * moveSpeed * Time.deltaTime);
+        Vector3 scale = transform.localScale;
+        scale.x = (targetPosition.x > transform.position.x) ? Mathf.Abs(scale.x) : -Mathf.Abs(scale.x);
+        transform.localScale = scale;
+    }
 
-        // Kiểm tra nếu gần tới điểm đích
-        if (Vector3.Distance(transform.position, targetPoint.position) < 0.1f)
+    // Khi Player vào vùng điểm A hoặc B
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
         {
-            // Đổi điểm đích
-            targetPoint = (targetPoint == pointB) ? pointA : pointB;
-        }
-
-        // Set animation Running
-        animator.SetBool("Running", true);
-    }
-
-    void Jump()
-    {
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-        animator.SetTrigger("Jump");
-        isJumping = true;
-        StartCoroutine(ResetJump()); // Bắt đầu coroutine reset nhảy
-    }
-
-    IEnumerator ResetJump()
-    {
-        yield return new WaitForSeconds(1f); // Đợi 1 giây (hoặc thời gian animation nhảy)
-        isJumping = false;
-    }
-
-    void CheckForPlayer()
-    {
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, attackRange, playerLayer);
-
-        if (hitColliders.Length > 0 && !isAttacking)
-        {
+            Debug.Log("Phát hiện Player - Bắt đầu tấn công!");
             isAttacking = true;
-            isMoving = false; // Dừng di chuyển
-            animator.SetBool("Running", false); // Dừng animation chạy
+            currentState = State.Attacking;
 
-            // Tấn công
-            Attack();
+            if (animator != null)
+            {
+                animator.SetBool("Running", false);
+                animator.SetTrigger("Attack"); // Sử dụng Trigger thay vì Bool
+                animator.SetBool("Damaged", true);
+            }
         }
     }
 
-    void Attack()
+    private void OnTriggerExit2D(Collider2D collision)
     {
-        animator.SetTrigger("Attack_Punch");
-
-        // Sau khi animation tấn công kết thúc, gọi hàm ResetAttack
-        Invoke("ResetAttack", animator.GetCurrentAnimatorStateInfo(0).length);
-    }
-
-    void ResetAttack()
-    {
-        isAttacking = false;
-        isMoving = true; // Tiếp tục di chuyển
-    }
-
-    IEnumerator ChangeMovement()
-    {
-        while (true)
+        if (collision.CompareTag("Player"))
         {
-            yield return new WaitForSeconds(Random.Range(2f, 5f)); // Đợi một khoảng thời gian ngẫu nhiên
+            Debug.Log("Player rời khỏi - Tiếp tục di chuyển!");
+            isAttacking = false;
 
-            if (!isAttacking && !isJumping) // Chỉ thay đổi nếu không tấn công và không nhảy
+            if (animator != null)
             {
-                if (Random.value < 0.5f) // 50% cơ hội nhảy
-                {
-                    Jump();
-                }
+                animator.SetBool("Attack", false);
+                animator.SetBool("Damaged", false);
+                animator.SetBool("Running", true);
             }
+
+            target = (currentState == State.MovingToA) ? pointA.position : pointB.position;
         }
     }
 }

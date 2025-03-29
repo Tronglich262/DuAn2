@@ -12,11 +12,20 @@ public class Kiem : MonoBehaviour
     private void Start()
     {
         swordCollider.enabled = false; // Tắt collider lúc đầu
-        
+
         // Gán sự kiện cho Button
         if (attackButton != null)
         {
             attackButton.onClick.AddListener(Attack);
+        }
+    }
+
+    private void Update()
+    {
+        // Kiểm tra nếu nhấn phím Q thì thực hiện Attack
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            Attack();
         }
     }
 
@@ -49,7 +58,7 @@ public class Kiem : MonoBehaviour
     IEnumerator CHO()
     {
         yield return new WaitForSeconds(0.3f);
-        swordCollider.enabled = true; 
+        swordCollider.enabled = true;
         yield return new WaitForSeconds(0.2f);
         swordCollider.enabled = false;
     }

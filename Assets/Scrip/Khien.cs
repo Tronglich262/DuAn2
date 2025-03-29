@@ -19,6 +19,15 @@ public class Khien : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        // Kiểm tra nếu nhấn phím W thì kích hoạt khiên
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            ActivateShield();
+        }
+    }
+
     public void ActivateShield()
     {
         StartCoroutine(CHO());
@@ -35,7 +44,7 @@ public class Khien : MonoBehaviour
     IEnumerator CHO()
     {
         yield return new WaitForSeconds(0.3f);
-        swordCollider.enabled = true; 
+        swordCollider.enabled = true;
         yield return new WaitForSeconds(0.2f);
         swordCollider.enabled = false;
     }

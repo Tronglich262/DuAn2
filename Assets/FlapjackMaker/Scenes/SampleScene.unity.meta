@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7df3498dde35d97418d801513130be0c
+guid: 21cd13cc9a57f204ca656160f201683a
 DefaultImporter:
   externalObjects: {}
   userData: 
@@ -7,8 +7,8 @@ DefaultImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 245481
-  packageName: FREE Medieval items Icons pack
-  packageVersion: 1.0.0
+  productId: 259245
+  packageName: 2D Casual Game UI HD
+  packageVersion: 1.0
   assetPath: Assets/FlapjackMaker/Scenes/SampleScene.unity
-  uploadId: 559011
+  uploadId: 614498
