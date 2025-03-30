@@ -43,7 +43,7 @@ public class Khien : MonoBehaviour
 
     IEnumerator CHO()
     {
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
         swordCollider.enabled = true;
         yield return new WaitForSeconds(0.2f);
         swordCollider.enabled = false;

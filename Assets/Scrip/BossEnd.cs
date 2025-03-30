@@ -3,34 +3,53 @@ using UnityEngine;
 
 public class BossEnd : MonoBehaviour
 {
-    public Transform pointA; // Điểm A (vị trí tuần tra)
-    public Transform pointB; // Điểm B (vị trí tuần tra)
-    public Transform player; // Player
+    public Transform pointA, pointB, player;
+    public float patrolSpeed = 2f;
+    public float chaseSpeed = 4f;
+    public float stopDistance = 1.5f;
+    public float attackCooldown = 1f; // Thời gian giữa các lần tấn công
+    public float retreatDistance = 3f; // Lùi lại 3 pixel
+    public float retreatTime = 0.1f; // Thời gian lùi lại
 
-    public float speed = 2f; // Tốc độ tuần tra
-    public float chaseSpeed = 4f; // Tốc độ đuổi theo Player
-    public float stopDistance = 0.5f; // Khoảng cách dừng lại khi gần Player
-
-    private bool movingToB = true; // Kiểm tra hướng di chuyển
-    private bool isChasing = false; // Kiểm tra trạng thái tấn công
+    private bool isChasing = false;
+    private bool isAttacking = false;
+    private bool movingToB = true;
+    private bool isCollidingWithPlayer = false;
+    public GameObject healthBarUI; 
 
     private Animator animator;
     private Rigidbody2D rb;
 
     void Start()
     {
+        if (healthBarUI != null)
+        {
+            healthBarUI.SetActive(false); // Ẩn thanh máu khi bắt đầu
+        }
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
-        bool playerInZone = IsPlayerBetweenAandB();
-        isChasing = playerInZone;
+        if (isAttacking) return; // Đang tấn công thì không di chuyển
 
-        if (isChasing)
+        if (IsPlayerBetweenAandB())
         {
-            ChasePlayer();
+            float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+            if (distanceToPlayer <= stopDistance)
+            {
+                isChasing = false;
+                if (!isAttacking)
+                {
+                    StartCoroutine(AttackLoop());
+                }
+            }
+            else
+            {
+                ChasePlayer();
+            }
         }
         else
         {
@@ -40,60 +59,76 @@ public class BossEnd : MonoBehaviour
 
     void Patrol()
     {
-        animator.SetBool("Running", true); // Bật animation chạy
+        if (isAttacking) return;
+
+        animator.SetBool("Running", true);
+        animator.SetBool("Idle", false);
+        animator.SetBool("Attack", false);
+
         Transform target = movingToB ? pointB : pointA;
-        transform.position = Vector2.MoveTowards(transform.position, target.position, speed * Time.deltaTime);
+        transform.position = Vector2.MoveTowards(transform.position, target.position, patrolSpeed * Time.deltaTime);
         Flip(target.position.x);
 
         if (Vector2.Distance(transform.position, target.position) < 0.1f)
         {
-            movingToB = !movingToB; // Đảo hướng khi đến nơi
+            movingToB = !movingToB;
+            animator.SetBool("Running", false);
+            animator.SetBool("Idle", true);
         }
     }
 
     void ChasePlayer()
     {
-        animator.SetBool("Running", true); // Bật animation chạy
+        if (isAttacking) return;
+
+        animator.SetBool("Running", true);
+        animator.SetBool("Idle", false);
+        animator.SetBool("Attack", false);
+
         transform.position = Vector2.MoveTowards(transform.position, player.position, chaseSpeed * Time.deltaTime);
         Flip(player.position.x);
-
-        if (Vector2.Distance(transform.position, player.position) < stopDistance)
-        {
-            Attack();
-        }
     }
 
-    void Attack()
+    IEnumerator AttackLoop()
     {
-        animator.SetBool("Running", false); // Dừng animation chạy
-        animator.ResetTrigger("Attack"); // Reset trước để tránh bị bỏ qua
-        animator.SetTrigger("Attack"); // Sử dụng Trigger để kích hoạt animation
-        Debug.Log("Quái tấn công Player!");
+        isAttacking = true;
+        animator.SetBool("Running", false);
+        animator.SetBool("Idle", false);
 
-        StartCoroutine(RetreatAfterAttack());
+        while (isCollidingWithPlayer) 
+        {
+            animator.SetBool("Attack", true);
+            Debug.Log("Boss đang tấn công Player!");
+
+            yield return new WaitForSeconds(attackCooldown);
+
+            yield return StartCoroutine(RetreatAfterAttack()); // Lùi lại sau mỗi lần tấn công
+        }
+
+        animator.SetBool("Attack", false);
+        isAttacking = false;
     }
-
 
     IEnumerator RetreatAfterAttack()
     {
-        animator.SetBool("Running", true); // Tiếp tục chạy khi lùi
-        float retreatTime = 0.3f;
-        float retreatDistance = 3f;
+        float retreatTime = 0.3f; // Thời gian để lùi
+        float retreatDistance = 3f; // Khoảng cách lùi (~2 pixel)
 
-        Vector2 retreatDirection = (transform.position - player.position).normalized;
-        Vector2 retreatTarget = (Vector2)transform.position + retreatDirection * retreatDistance;
+        Vector2 retreatDirection = (transform.position - player.position).normalized; // Hướng lùi
+        Vector2 retreatTarget = (Vector2)transform.position + retreatDirection * retreatDistance; // Vị trí cần lùi đến
 
         float elapsedTime = 0;
         while (elapsedTime < retreatTime)
         {
-            transform.position = Vector2.MoveTowards(transform.position, retreatTarget,
-                (retreatDistance / retreatTime) * Time.deltaTime);
+            transform.position = Vector2.MoveTowards(transform.position, retreatTarget, (retreatDistance / retreatTime) * Time.deltaTime);
             elapsedTime += Time.deltaTime;
             yield return null;
         }
 
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.3f); // Chờ 0.3 giây trước khi tấn công tiếp
     }
+
+
 
     bool IsPlayerBetweenAandB()
     {
@@ -110,6 +145,36 @@ public class BossEnd : MonoBehaviour
             Vector3 newScale = transform.localScale;
             newScale.x *= -1;
             transform.localScale = newScale;
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            Debug.Log("Player vào vùng tấn công!");
+            isCollidingWithPlayer = true;
+            if (healthBarUI != null)
+            {
+                healthBarUI.SetActive(true); // Hiện thanh máu khi phát hiện Player
+            }
+            if (!isAttacking)
+            {
+                StartCoroutine(AttackLoop());
+            }
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Player"))
+        {
+            Debug.Log("Player rời khỏi vùng tấn công!");
+            isCollidingWithPlayer = false;
+            if (healthBarUI != null)
+            {
+                healthBarUI.SetActive(false); // Ẩn thanh máu khi Player rời đi
+            }
         }
     }
 }

@@ -23,17 +23,28 @@ namespace Inventory
         private void Start()
         {
             
+            
             PrepareUI();
             PrepareInventoryDaTa();
+
             if (openPanelButton != null)
             {
                 openPanelButton.onClick.AddListener(TogglePanel);
             }
 
-            // Ẩn bảng lúc đầu
             if (infoPanel != null)
             {
                 infoPanel.SetActive(false);
+            }
+
+            // 🔹 Load trạng thái mở inventory từ PlayerPrefs
+            if (PlayerPrefs.GetInt("InventoryOpen", 0) == 1)
+            {
+                invontoryUI.show();
+                foreach (var item in inventoryDaTa.GetCurrentInventoryState())
+                {
+                    invontoryUI.UpdateData(item.Key, item.Value.item.ItemImage, item.Value.quantity);
+                }
             }
         }
         
@@ -67,12 +78,17 @@ namespace Inventory
 
         private void UpdateInventoryUI(Dictionary<int, InventoryItem> inventoryState)
         {
-            invontoryUI.ResetAllItems();
+            invontoryUI.ResetAllItems(); // Xóa toàn bộ UI trước khi cập nhật
             foreach (var item in inventoryState)
             {
-                invontoryUI.UpdateData(item.Key, item.Value.item.ItemImage, item.Value.quantity);
+                if (!item.Value.IsEmpty) // 🔹 Chỉ cập nhật nếu ô có item
+                {
+                    invontoryUI.UpdateData(item.Key, item.Value.item.ItemImage, item.Value.quantity);
+                }
             }
         }
+
+
 
         public void PrepareUI()
         {
@@ -128,15 +144,18 @@ namespace Inventory
         {
             InventoryItem inventoryItem = inventoryDaTa.GetItemAt(itemIndex);
             if (inventoryItem.IsEmpty) return;
+
             invontoryUI.CreateDraggedItem(inventoryItem.item.ItemImage, inventoryItem.quantity);
         }
         
 
-        private void HandleSwapItems(int itemindex_1, int itemIndex_2)
+        private void HandleSwapItems(int itemIndex_1, int itemIndex_2)
         {
-            inventoryDaTa.SwapItems(itemindex_1, itemIndex_2);
-
+            inventoryDaTa.SwapItems(itemIndex_1, itemIndex_2);
+            invontoryUI.ResetAllItems(); // 🔹 Xóa UI item đang kéo
+            UpdateInventoryUI(inventoryDaTa.GetCurrentInventoryState());
         }
+
 
         private void HandleDescriptionRequest(int itemIndex)
         {
@@ -170,7 +189,9 @@ namespace Inventory
         {
             if (Input.GetKeyDown(KeyCode.I))
             {
-                if (invontoryUI.isActiveAndEnabled == false)
+                bool isOpen = invontoryUI.isActiveAndEnabled;
+        
+                if (!isOpen)
                 {
                     invontoryUI.show();
                     foreach (var item in inventoryDaTa.GetCurrentInventoryState())
@@ -179,11 +200,15 @@ namespace Inventory
                             item.Value.item.ItemImage,
                             item.Value.quantity);
                     }
+                    PlayerPrefs.SetInt("InventoryOpen", 1); // 🔹 Lưu trạng thái mở inventory
                 }
                 else
                 {
                     invontoryUI.hide();
+                    PlayerPrefs.SetInt("InventoryOpen", 0); // 🔹 Lưu trạng thái đóng inventory
                 }
+
+                PlayerPrefs.Save(); // Lưu dữ liệu lại
             }
         }
     }

@@ -16,8 +16,10 @@ MonoBehaviour:
   <MaxStackSize>k__BackingField: 1
   <Name>k__BackingField: Apple
   <Description>k__BackingField: Restores
-  <ItemImage>k__BackingField: {fileID: 21300000, guid: 69138f6b03c8c9c44bda0ff26e983dda,
+  <ItemImage>k__BackingField: {fileID: 21300000, guid: b82a1ae3b5cd8574b83325b9eb90434c,
     type: 3}
+  <DefaultParametersList>k__BackingField: []
   modifiersData:
   - statModifier: {fileID: 11400000, guid: cbb8843b3f916a347aa78eb849fd7422, type: 2}
     value: 10
+  <actionSFX>k__BackingField: {fileID: 0}

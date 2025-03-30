@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Linq;
 using Inventory.Model;
+using Unity.VisualScripting;
 using UnityEditor;
 
 namespace Inventory.UI
@@ -27,7 +28,7 @@ namespace Inventory.UI
 
         public event Action<int, int> OnSwapItems;
         [SerializeField] private ItemActionPanel actionPanel;
-
+        
         private void Awake()
         {
             hide();
@@ -126,6 +127,7 @@ namespace Inventory.UI
 
         public void show()
         {
+            Debug.Log("Đang mở Inventory...");
             gameObject.SetActive(true);
             ResetSelection();
         }

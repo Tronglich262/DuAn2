@@ -23,6 +23,7 @@ namespace Inventory.Model
                 inventoryItems.Add(InventoryItem.GetEmptyItem());
             }
         }
+        
 
         public int AddItem(ItemSO item, int quantity,List<ItemParameter> itemState = null)
         {
@@ -143,13 +144,20 @@ namespace Inventory.Model
             return inventoryItems[itemIndex];
         }
 
-        public void SwapItems(int itemindex1, int itemindex2)
+        public void SwapItems(int index1, int index2)
         {
-            InventoryItem item1 = inventoryItems[itemindex1];
-            inventoryItems[itemindex1] = inventoryItems[itemindex2];
-            inventoryItems[itemindex2] = item1;
-            InformAboutChange();
+            if (index1 == index2) return; // Không swap nếu cùng vị trí
+            if (inventoryItems[index1].IsEmpty && inventoryItems[index2].IsEmpty) return; // Nếu cả hai rỗng, không làm gì
+
+            var temp = inventoryItems[index1];
+            inventoryItems[index1] = inventoryItems[index2];
+            inventoryItems[index2] = temp;
+
+            OnInventoryUpdated?.Invoke(GetCurrentInventoryState()); // Cập nhật UI
         }
+
+
+
 
         private void InformAboutChange()
         {
